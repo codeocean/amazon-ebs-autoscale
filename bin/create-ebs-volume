@@ -256,7 +256,7 @@ function create_and_attach_volume() {
     for i in $(eval echo "{0..$max_attempts}") ; do
 
       local ebs_autoscale_tags='[{"Key":"source-instance","Value":"'$instance_id'"},{"Key":"amazon-ebs-autoscale-creation-time","Value":"'$timestamp'"}]'
-      local tag_specification='{"ResourceType":"volume","Tags":'$(jq -sc 'add' <(echo "$ebs_autoscale_tags") <(echo "$instance_tags"))'}'
+      local tag_specifications='[{"ResourceType":"volume","Tags":'$(jq -sc 'add' <(echo "$ebs_autoscale_tags") <(echo "$instance_tags"))'}]'
 
       # Note: Shellcheck says the $vars in this command should be double quoted to prevent globbing and word-splitting,
       # but this ends up making the '--encrypted' argument to fail during the execution of the install script. Conversely, NOT putting double-quotes
@@ -267,7 +267,7 @@ function create_and_attach_volume() {
               --region $region \
               --availability-zone $availability_zone \
               $volume_opts \
-              --tag-specification "'$tag_specification'" \
+              --tag-specifications "$tag_specifications" \
           2> $tmpfile
       )
 
