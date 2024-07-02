@@ -172,11 +172,16 @@ add_space () {
         logthis "Adding device ${DEVICE} to logical volume ${MOUNTPOINT}"
         btrfs device add ${DEVICE} ${MOUNTPOINT}
         btrfs balance start -m ${MOUNTPOINT}
-      else
-        logthis "Adding device ${DEVICE} to logical volume /dev/mapper/${LVM_VG}-${LVM_LV}"
+      elif [[ "$FILE_SYSTEM" =~ ^lvm\.(ext4|xfs)$ ]]; then
+        device_path="/dev/mapper/${LVM_VG}-${LVM_LV}"
+        logthis "Adding device ${DEVICE} to logical volume ${device_path}"
         vgextend ${LVM_VG} ${DEVICE}
-        lvresize -l 100%VG /dev/mapper/${LVM_VG}-${LVM_LV}
-        resize2fs /dev/mapper/${LVM_VG}-${LVM_LV}
+        lvresize -l 100%VG ${device_path}
+        [ "${FILE_SYSTEM}" = "lvm.ext4" ] && resize2fs ${device_path}
+        [ "${FILE_SYSTEM}" = "lvm.xfs" ] && xfs_growfs ${device_path}
+      else
+        echo "Unknown file system type: ${FILE_SYSTEM}"
+        exit 1
       fi
       logthis "Finished extending logical volume"
 
