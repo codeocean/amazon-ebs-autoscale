@@ -1,6 +1,6 @@
 # Amazon Elastic Block Store Autoscale
 
-This is an example of a daemon process that monitors a filesystem mountpoint and automatically expands it when free space falls below a configured threshold. New [Amazon EBS](https://aws.amazon.com/ebs/) volumes are added to the instance as necessary and the underlying filesystem ([BTRFS](http://btrfs.wiki.kernel.org) or [LVM](https://en.wikipedia.org/wiki/Logical_Volume_Manager_(Linux)) with [ext4](https://en.wikipedia.org/wiki/Ext4)) expands as new devices are added.
+This is an example of a daemon process that monitors a filesystem mountpoint and automatically expands it when free space falls below a configured threshold. New [Amazon EBS](https://aws.amazon.com/ebs/) volumes are added to the instance as necessary and the underlying filesystem ([BTRFS](http://btrfs.wiki.kernel.org) or [LVM](https://en.wikipedia.org/wiki/Logical_Volume_Manager_(Linux)) with [ext4](https://en.wikipedia.org/wiki/Ext4)) or [xfs](https://en.wikipedia.org/wiki/XFS)) expands as new devices are added.
 
 ## Assumptions:
 
@@ -53,9 +53,9 @@ Options
                         (Default: none - automatically create and attaches a volume)
                         If provided --initial-size is ignored.
 
-    -f, --file-system   btrfs | lvm.ext4
+    -f, --file-system   btrfs | lvm.ext4 | lvm.xfs
                         Filesystem to use (default: btrfs).
-                        Options are btrfs or lvm.ext4
+                        Options are btrfs, lvm.ext4, lvm.xfs
 
     -h, --help
                         Print help and exit.

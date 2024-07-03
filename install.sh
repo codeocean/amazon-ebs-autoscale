@@ -43,9 +43,9 @@ Options
                         (Default: none - automatically create and attaches a volume)
                         If provided --initial-size is ignored.
 
-    -f, --file-system   btrfs | lvm.ext4
+    -f, --file-system   btrfs | lvm.ext4 | lvm.xfs
                         Filesystem to use (default: btrfs).
-                        Options are btrfs or lvm.ext4
+                        Options are btrfs, lvm.ext4, lvm.xfs
 
     -h, --help
                         Print help and exit.
@@ -249,15 +249,16 @@ if [ "${FILE_SYSTEM}" = "btrfs" ]; then
   # add entry to fstab
   # allows non-root users to mount/unmount the filesystem
   echo -e "${DEVICE}\t${MOUNTPOINT}\tbtrfs\tdefaults\t0\t0" |  tee -a /etc/fstab
-elif [ "${FILE_SYSTEM}" = "lvm.ext4" ]; then
+elif [[ "$FILE_SYSTEM" =~ ^lvm\.(ext4|xfs)$ ]]; then
+  TYPE=$(echo ${FILE_SYSTEM} | cut -d '.' -f 2)
   VG=$(get_config_value .lvm.volume_group)
   LV=$(get_config_value .lvm.logical_volume)
   pvcreate $DEVICE
   vgcreate $VG $DEVICE
   lvcreate $VG -n $LV -l 100%VG
-  mkfs.ext4 /dev/mapper/${VG}-${LV}
+  mkfs -t ${TYPE} /dev/mapper/${VG}-${LV}
   mount /dev/mapper/${VG}-${LV} $MOUNTPOINT
-  echo -e "/dev/mapper/${VG}-${LV}\t${MOUNTPOINT}\text4\tdefaults\t0\t0" |  tee -a /etc/fstab
+  echo -e "/dev/mapper/${VG}-${LV}\t${MOUNTPOINT}\t${TYPE}\tdefaults\t0\t0" |  tee -a /etc/fstab
 else
   echo "Unknown file system type: ${FILE_SYSTEM}"
   exit 1
