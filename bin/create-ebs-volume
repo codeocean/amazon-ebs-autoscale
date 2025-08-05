@@ -186,7 +186,7 @@ function create_and_attach_volume() {
         attached_volumes=$(
           aws ec2 describe-volumes \
             --region $region \
-            --filters "Name=attachment.instance-id,Values=$instance_id Name=tag-key,Values=$TAG"
+            --filters Name=attachment.instance-id,Values=$instance_id Name=tag-key,Values=$TAG
         )
 
         if [ $? -eq 0 ]; then
@@ -203,7 +203,7 @@ function create_and_attach_volume() {
         created_volumes=$(
             aws ec2 describe-volumes \
                 --region $region \
-                --filters "Name=tag:source-instance,Values=$instance_id Name=tag-key,Values=$TAG"
+                --filters Name=attachment.instance-id,Values=$instance_id Name=tag-key,Values=$TAG
         )
 
         if [ $? -eq 0 ]; then
@@ -220,7 +220,7 @@ function create_and_attach_volume() {
         total_created_size=$(
             aws ec2 describe-volumes \
                 --region $region \
-                --filters "Name=tag:source-instance,Values=$instance_id Name=tag-key,Values=$TAG" \
+                --filters Name=attachment.instance-id,Values=$instance_id Name=tag-key,Values=$TAG \
                 --query 'sum(Volumes[].Size)' \
                 --output text
         )
