@@ -42,9 +42,8 @@ for volume in $attached_volumes; do
     aws ec2 detach-volume --region $region --volume-id $volume
     aws ec2 wait volume-available --region $region --volume-ids $volume
     echo "volume $volume detached"
-    
+
     aws ec2 delete-volume --region $region --volume-id $volume
     aws ec2 wait volume-deleted --region $region --volume-ids $volume
-    echo "volume $volume deleted"  
+    echo "volume $volume deleted"
 done
-

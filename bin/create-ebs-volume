@@ -46,10 +46,10 @@ Options
 
     -t, --type          Type of volume. (Default: config.volume.type)
 
-    -i, --iops          N 
+    -i, --iops          N
                         IOPS for volume. Only valid if type=io1, io2, gp3. (Default: config.volume.iops)
 
-    --throughput        N 
+    --throughput        N
                         The throughput for a volume, with a maximum of 1,000 MiB/s. (Default: config.volume.throughput)
 
     --not-encrypted     Flag to make the volume un-encyrpted. Default is to create
@@ -58,11 +58,11 @@ Options
     --max-total-created-size SIZE_GB
                         Maximum total size in GB of all volumes created by the instance.
                         (Default: config.limits.max_logical_volume_size)
-                        
+
     --max-attached-volumes N
                         Maximum number of attached volumes.
                         (Default: config.limits.max_ebs_volume_count)
-    
+
     --max-created-volumes N
                         Maximum number of volumes that can be created by the instance.
                         (Default: MAX_ATTACHED_VOLUMES)
@@ -166,6 +166,8 @@ function get_next_logical_device() {
 }
 
 function create_and_attach_volume() {
+    TAG=amazon-ebs-autoscale-creation-time
+
     local instance_id=$(get_metadata instance-id)
     local availability_zone=$(get_metadata placement/availability-zone)
     local region=${availability_zone%?}
@@ -184,7 +186,7 @@ function create_and_attach_volume() {
         attached_volumes=$(
           aws ec2 describe-volumes \
             --region $region \
-            --filters "Name=attachment.instance-id,Values=$instance_id"
+            --filters Name=attachment.instance-id,Values=$instance_id Name=tag-key,Values=$TAG
         )
 
         if [ $? -eq 0 ]; then
@@ -201,7 +203,7 @@ function create_and_attach_volume() {
         created_volumes=$(
             aws ec2 describe-volumes \
                 --region $region \
-                --filters "Name=tag:source-instance,Values=$instance_id"
+                --filters Name=attachment.instance-id,Values=$instance_id Name=tag-key,Values=$TAG
         )
 
         if [ $? -eq 0 ]; then
@@ -218,7 +220,7 @@ function create_and_attach_volume() {
         total_created_size=$(
             aws ec2 describe-volumes \
                 --region $region \
-                --filters "Name=tag:source-instance,Values=$instance_id" \
+                --filters Name=attachment.instance-id,Values=$instance_id Name=tag-key,Values=$TAG \
                 --query 'sum(Volumes[].Size)' \
                 --output text
         )
@@ -246,7 +248,7 @@ function create_and_attach_volume() {
     if [ "`echo $attached_volumes | jq '.Volumes | length'`" -ge "$MAX_ATTACHED_VOLUMES" ]; then
         error "maximum number of attached volumes reached ($MAX_ATTACHED_VOLUMES)"
     fi
-    
+
     # check if there are available device names
     local device=$(get_next_logical_device)
     if [ -z "$device" ]; then
@@ -266,7 +268,7 @@ function create_and_attach_volume() {
     local volume=""
     for i in $(eval echo "{0..$max_attempts}") ; do
 
-      local ebs_autoscale_tags='[{"Key":"source-instance","Value":"'$instance_id'"},{"Key":"amazon-ebs-autoscale-creation-time","Value":"'$timestamp'"}]'
+      local ebs_autoscale_tags='[{"Key":"source-instance","Value":"'$instance_id'"},{"Key":'$TAG'","Value":"'$timestamp'"}]'
       local tag_specifications='[{"ResourceType":"volume","Tags":'$(jq -sc 'add' <(echo "$ebs_autoscale_tags") <(echo "$instance_tags"))'}]'
 
       # Note: Shellcheck says the $vars in this command should be double quoted to prevent globbing and word-splitting,
@@ -324,7 +326,7 @@ function create_and_attach_volume() {
         --instance-id $instance_id \
         --volume-id $volume_id \
     > /dev/null
-    
+
     status="$?"
     if [ ! "$status" -eq 0 ]; then
         logthis "deleting volume $volume_id"
@@ -332,7 +334,7 @@ function create_and_attach_volume() {
             --region $region \
             --volume-id $volume_id \
         > /dev/null
-        
+
         error "could not attach volume to instance"
     fi
     set -e
