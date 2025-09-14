@@ -268,7 +268,7 @@ function create_and_attach_volume() {
     local volume=""
     for i in $(eval echo "{0..$max_attempts}") ; do
 
-      local ebs_autoscale_tags='[{"Key":"source-instance","Value":"'$instance_id'"},{"Key":'$TAG'","Value":"'$timestamp'"}]'
+      local ebs_autoscale_tags='[{"Key":"source-instance","Value":"'$instance_id'"},{"Key":"'$TAG'","Value":"'$timestamp'"}]'
       local tag_specifications='[{"ResourceType":"volume","Tags":'$(jq -sc 'add' <(echo "$ebs_autoscale_tags") <(echo "$instance_tags"))'}]'
 
       # Note: Shellcheck says the $vars in this command should be double quoted to prevent globbing and word-splitting,
